@@ -1,4 +1,4 @@
-# binops
+# bpr
 Binary Pattern Recognition
 
 

@@ -5,7 +5,7 @@ import (
 	//"github.com/fatih/color"
 	"log"
 	"os"
-	"strings"
+	//"strings"
 )
 
 var (
@@ -14,25 +14,27 @@ var (
 	bitBool  bool         // allows byte conversion to boolean
 	prevBit  bool         // previous bit in stream of binary
 	bitSlice []string     // array of all the binary that has passed through the system
-	bitIndex uint     = 0 // bit # in the net total of bits
+	BitIndex uint     = 0 // bit # in the net total of bits ~~~~ check whether needs to be global
 
-	PositionP   *Pattern
-	PositionV   *Pattern
-	PeakDepth   uint
-	ValleyDepth uint
+	PSeed  *Pattern
+	VSeed  *Pattern
+	P      *Pattern
+	V      *Pattern
+	PDepth uint
+	VDepth uint
 )
 
 type Pattern struct {
-	counter  uint     // # of times this struct has been accessed
+	counter  uint     // # of times a given pattern has been collected
 	positive *Pattern // pos = 1 (bit value) | Pointer to next bit in pattern
 	negative *Pattern // neg = 0 (bit value) | Pointer to next bit in pattern
-	occures  []uint   // array of where the pattern(s) start
+	occurs   []uint   // array of where the pattern(s) start
 }
 
 func main() {
-	PeakSeed := new(Pattern)
-	ValleySeed := new(Pattern)
-	findPatternsIn("t2.txt")
+	PSeed = new(Pattern)
+	VSeed = new(Pattern)
+	findPatternsIn("test.txt")
 }
 
 func findPatternsIn(filename string) {
@@ -52,22 +54,24 @@ func findPatternsIn(filename string) {
 		}
 
 		for i := uint(8); i > 0; i-- {
-			mask := i - 1                      //creates eight different bitmasks to read each bit from a byte individualy
-			bit := b1[0] & (1 << mask) >> mask //binary opperations on bitmask
+			mask := i - 1                              //creates eight different bitmasks to read each bit from a byte individualy
+			bit := singleByte[0] & (1 << mask) >> mask //binary opperations on bitmask
 			if bit == 0 {
 				bitSlice = append(bitSlice, "0") //add bit to "history"
 				bitBool = false                  // converts bit (type byte) to type bool (simplifies comparision)
 				if !didInit {
-					didInit = true
+					P = PSeed
+					V = VSeed
+					didInit = true // foces prevBit to be set before comparing it
 				} else {
 					if bitBool != prevBit {
 						//PEAK
-						PositionP = PeakSeed
-						PeakDepth = 0
-						//return to top of peak tree
-					} else {
-						//currentPosition := return peaks
-						//keep traveling down peak tree
+						P.occurs = append(P.occurs, BitIndex)
+						P.counter++
+						fmt.Println("P ", P)
+						P = PSeed
+						PDepth = 0
+						//perhaps flip this
 					}
 				}
 				prevBit = false
@@ -76,21 +80,41 @@ func findPatternsIn(filename string) {
 				bitSlice = append(bitSlice, "1") //add bit to "history"
 				bitBool = true                   // converts bit (type byte) to type bool (simplifies comparision)
 				if !didInit {
-					didInit = true
+					P = PSeed
+					V = VSeed
+					didInit = true // foces prevBit to be set before comparing it
 				} else {
 					if bitBool != prevBit {
 						//VALLEY
-						PositionV = ValleySeed
-						PeakDepth = 0
-						//return to top of valley tree
-					} else {
-						//PositionV =
-						//keep traveling down valley tree
+						V.occurs = append(V.occurs, BitIndex)
+						V.counter++
+						fmt.Println(bitSlice[:BitIndex], bitSlice[BitIndex:])
+						V = VSeed
+						VDepth = 0
+						//perhaps flip this
 					}
 				}
 				prevBit = true
 			}
-			bitIndex++
+			P = P.NextBitPointer(bitBool)
+			V = V.NextBitPointer(bitBool)
+			PDepth++
+			VDepth++
+			BitIndex++
 		}
+	}
+}
+
+func (p *Pattern) NextBitPointer(b bool) *Pattern {
+	if b {
+		if p.positive == nil {
+			p.positive = new(Pattern)
+		}
+		return p.positive
+	} else {
+		if p.negative == nil {
+			p.negative = new(Pattern)
+		}
+		return p.negative
 	}
 }

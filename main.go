@@ -34,7 +34,7 @@ type Pattern struct {
 func main() {
 	PSeed = new(Pattern)
 	VSeed = new(Pattern)
-	findPatternsIn("test.txt")
+	findPatternsIn("test.md")
 }
 
 func findPatternsIn(filename string) {
